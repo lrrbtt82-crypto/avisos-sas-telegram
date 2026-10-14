@@ -1,0 +1,46 @@
+name: Vigilar Intervencion-Tesoreria
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  check-inap:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Preparar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Comprobar Intervencion-Tesoreria
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python bot_inap.py
+
+      - name: Guardar estado
+        run: |
+          git config user.name "INAP Telegram Bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add state_inap.json
+
+          if git diff --cached --quiet; then
+            echo "No hay cambios en el estado."
+          else
+            git commit -m "Actualizar estado Intervencion-Tesoreria"
+            git push
+          fi
